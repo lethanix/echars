@@ -1,0 +1,9 @@
+[package]
+name = "cli"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+scrapper = {path = "../scrapper"}
+anyhow = "1.0.55"
+directories = "4.0"
