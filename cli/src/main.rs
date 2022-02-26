@@ -47,7 +47,6 @@ fn main() -> Result<()> {
     let _boundary = echa.get_constituents(Section::Composition(Boundary));
     let legal = echa.get_constituents(Section::Composition(Subsection::LegalEntity));
 
-
     println!("\tIdentification\n{:#?}", identification);
     println!("\tLegal\n{:#?}", legal);
 

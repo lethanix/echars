@@ -43,6 +43,18 @@ impl FromStr for Subsection {
     }
 }
 
+/// Represents the sections of the echa site:
+/// - Identification as `Section::Identification`
+/// - Composition(s) as `Section::Composition(Subsection)`
+///
+/// The [`Subsection`] represents the following:
+/// - Boundary Composition(s) as `Subsection::Boundary`
+/// - Legal Entity Composition(s) as `Subsection::LegalEntity`
+/// - Composition(s) generated upon use as `Subsection::Generated`
+/// - Other types of composition(s) as `Subsection::Other`
+///
+/// # Example
+///     let boundary = Section::Composition(Subsection::Boundary);
 #[derive(Debug, Copy, Clone, PartialOrd, PartialEq, Eq, Hash)]
 pub enum Section {
     Identification,
@@ -52,7 +64,6 @@ pub enum Section {
 /// Represents and manages the data for each section and subsection of the provided url.
 #[derive(Debug)]
 pub struct EchaSite<'a> {
-    // url: &'a str,
     url: Cow<'a, str>,
     data: HashMap<Section, EchaData>,
     document: Result<Html>,
@@ -215,6 +226,7 @@ impl<'a> EchaSite<'a> {
         }
     }
 
+    /// Returns the information of each constituent of the [`Section`] provided as an [`EchaData`] type.
     pub fn get_constituents(&mut self, section: Section) -> EchaData {
         match self.data.get(&section) {
             Some(data) => data.clone(),
