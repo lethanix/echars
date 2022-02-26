@@ -1,12 +1,21 @@
-use anyhow::{anyhow, Result};
+use std::borrow::Cow;
+use anyhow::{anyhow, Error, Result};
 use scraper::{ElementRef, Html, Selector};
 use std::collections::HashMap;
 use std::str::FromStr;
 use std::time::Instant;
 
-type EchaData = Vec<Vec<HashMap<String, String>>>;
+type EchaData = Vec<HashMap<String, String>>;
 
-#[derive(Debug, Copy, Clone, PartialOrd, PartialEq)]
+/// Represents the subsections of the Composition(s) section:
+/// - Boundary Composition(s) as `Subsection::Boundary`
+/// - Legal Entity Composition(s) as `Subsection::LegalEntity`
+/// - Composition(s) generated upon use as `Subsection::Generated`
+/// - Other types of composition(s) as `Subsection::Other`
+///
+/// # Example
+///     let boundary = Subsection::Boundary;
+#[derive(Debug, Copy, Clone, PartialOrd, PartialEq, Eq, Hash)]
 pub enum Subsection {
     Boundary,
     LegalEntity,
@@ -15,8 +24,14 @@ pub enum Subsection {
 }
 
 impl FromStr for Subsection {
-    type Err = anyhow::Error;
-
+    type Err = Error;
+    /// Parses a `string` to return an [`Subsection`] enum value.<br>
+    /// <br>
+    /// If parsing succeeds, return the value inside Ok, otherwise when the string is ill-formatted
+    /// return an error specific to the inside Err. The error type is specific to the implementation of the trait.
+    /// <br>
+    /// # Example
+    ///     assert_eq!(Subsection::Boundary, Subsection::from("Boundary Composition(s)")?)
     fn from_str(input: &str) -> Result<Subsection> {
         match input {
             "Boundary Composition(s)" => Ok(Subsection::Boundary),
@@ -28,25 +43,37 @@ impl FromStr for Subsection {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialOrd, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialOrd, PartialEq, Eq, Hash)]
 pub enum Section {
     Identification,
     Composition(Subsection),
 }
 
-fn fetch_document(url: String) -> Result<Html> {
-    println!("Fetching data...");
+/// Represents and manages the data for each section and subsection of the provided url.
+#[derive(Debug)]
+pub struct EchaSite<'a> {
+    // url: &'a str,
+    url: Cow<'a, str>,
+    data: HashMap<Section, EchaData>,
+    document: Result<Html>,
+}
+
+/// Fetch the html body of the provided url.
+fn fetch_document(url: &str) -> Result<Html> {
+    println!("Fetching data from {url}...");
     let now = Instant::now();
     let body = reqwest::blocking::get(url)?.text()?;
     let elapsed = now.elapsed().as_secs();
-    println!("\tTime elapsed fetching: {}", elapsed);
+    println!("\tFetched in: {} seconds", elapsed);
 
     Ok(Html::parse_document(&body))
 }
 
-pub fn data_from(url: &str, section: Section) -> Result<EchaData> {
-    let document = fetch_document(url.to_string())?;
-    //
+/// Scrap the data of each constituent from the provided section.
+/// <br>
+/// The result is a vector where each element represents a panel from a section/subsection as a vector.
+/// Each element of the latter is a HashMap with the data of the constituent.
+fn data_from(document: &Html, section: Section) -> Result<EchaData> {
     // **************************************************
     //*** Closure to obtain data from a sBlock
     let obtain_data = |data_html: ElementRef| -> Result<HashMap<String, String>> {
@@ -105,20 +132,21 @@ pub fn data_from(url: &str, section: Section) -> Result<EchaData> {
             .next()
             .expect("Problem obtaining identification html");
 
-        let wrap = vec![obtain_data(id_html).expect("Couldn't obtain Identification data")];
-        Ok(vec![wrap])
+        Ok(vec![obtain_data(id_html).expect("Couldn't obtain Identification data")])
+        // let wrap = vec![obtain_data(id_html).expect("Couldn't obtain Identification data")];
+        // Ok(vec![wrap])
     };
 
     // **************************************************
     //*** Get subsection and panels data
-    let panels_selector = Selector::parse("div.panel-group > h4 ,div.panel.panel-default").unwrap();
-    let block_selector = Selector::parse("div.sBlock").unwrap();
-    let title_selector = Selector::parse("h4.panel-title").unwrap();
+    let panels_selector =
+        Selector::parse("div.panel-group > h4 ,div.panel.panel-default").expect("panels_selector not created");
+    let block_selector = Selector::parse("div.sBlock").expect("block_selector not created");
+    let title_selector = Selector::parse("h4.panel-title").expect("title_selector not created");
 
     // **************************************************
     //*** Closure to get data from Compositions section
-    let compositions_data = |subsection_enum| -> Result<Vec<_>> {
-        // let subsection_enum = Section::Composition(Subsection::from(subsection));
+    let compositions_data = |subsection_enum| -> Result<EchaData> {
         // Sort each panel to know which subsection it belongs to. Returns an iterator containing tuples (Subsection, Node)
         // Each panel has x constituents
         // h4 headers -> Subsections and the title of each listing item
@@ -134,7 +162,8 @@ pub fn data_from(url: &str, section: Section) -> Result<EchaData> {
                         .collect::<String>()
                         .replace("open allclose all", "");
 
-                    *state = Section::Composition(Subsection::from_str(subsection.as_str()).ok()?);
+                    *state =
+                        Section::Composition(Subsection::from_str(subsection.as_str()).ok()?);
                 }
 
                 Some((*state, node))
@@ -142,7 +171,7 @@ pub fn data_from(url: &str, section: Section) -> Result<EchaData> {
             .filter(|(_, node)| node.value().name() != "h4");
 
         // Obtain constituents data of current panel
-        let constituent_data: Vec<_> = sorted_panels_data
+        let constituent_data: EchaData = sorted_panels_data
             .filter(|(subsection, _)| *subsection == subsection_enum)
             // .inspect(|x| println!("Constituent {:?} {:?}", x.0, x.1.value().name()))
             .map(|(_, node)| {
@@ -163,6 +192,7 @@ pub fn data_from(url: &str, section: Section) -> Result<EchaData> {
                     })
                     .collect::<Vec<HashMap<String, String>>>()
             })
+            .flatten()
             .collect();
 
         Ok(constituent_data)
@@ -171,15 +201,34 @@ pub fn data_from(url: &str, section: Section) -> Result<EchaData> {
     match section {
         Section::Identification => id_data(),
         Section::Composition(sub) => compositions_data(Section::Composition(sub)),
-        // _ => Err(anyhow!("Couldn't find match for section: {section:?}")),
     }
 }
 
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        let result = 2 + 2;
-        assert_eq!(result, 4);
+impl<'a> EchaSite<'a> {
+    /// Create a new instance of the structure and fetch the html body
+    /// from the provided url using [`fetch_document`].
+    pub fn new(url: &'a str) -> Self {
+        EchaSite {
+            url: Cow::from(url),
+            data: HashMap::default(),
+            document: fetch_document(&url),
+        }
     }
+
+    pub fn get_constituents(&mut self, section: Section) -> EchaData {
+        match self.data.get(&section) {
+            Some(data) => data.clone(),
+            None => {
+                let document = match &self.document {
+                    Ok(doc) => doc,
+                    Err(error) => panic!("Couldn't obtain html body {error:?}"),
+                };
+
+                let new_data = data_from(document, section).unwrap();
+                self.data.insert(section, new_data.clone());
+                new_data
+            }
+        }
+    }
+
 }

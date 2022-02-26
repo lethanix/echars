@@ -1,19 +1,19 @@
 use anyhow::{Context, Result};
 use directories::UserDirs;
-use scrapper::data_from;
-use scrapper::Section;
-use scrapper::Subsection;
+use scrapper::{EchaSite, Section, Subsection};
 use std::fs;
+use std::borrow::{Borrow, Cow};
+use scrapper::Subsection::Boundary;
 
 fn main() -> Result<()> {
     // **************************************************
     // ************ CLI args requirements ***************
     // **************************************************
-    let url = match std::env::args().nth(1) {
-        Some(url) => url,
+    let url : Cow<'static, str> = match std::env::args().nth(1) {
+        Some(url) => Cow::from(url),
         None => {
             println!("No CLI URL provided, using default.");
-            "https://echa.europa.eu/registration-dossier/-/registered-dossier/24529".into()
+            Cow::from("https://echa.europa.eu/registration-dossier/-/registered-dossier/24529")
             //"https://echa.europa.eu/registration-dossier/-/registered-dossier/26453".into()
         }
     };
@@ -42,13 +42,14 @@ fn main() -> Result<()> {
     // **************************************************
     // **************** Getting data ********************
     // **************************************************
-    //let _identification = data_from(&url, Section::Identification)?;
-    let boundary = data_from(&url, Section::Composition(Subsection::Boundary))?;
-    //let _legal = data_from(&url, Section::Composition(Subsection::LegalEntity))?;
-    //let generated = data_from(&url, Section::Composition(Subsection::Generated))?;
-    //let _other = data_from(&url, Section::Composition(Subsection::Other))?;
+    let mut echa = EchaSite::new(url.borrow());
+    let identification = echa.get_constituents(Section::Identification);
+    let _boundary = echa.get_constituents(Section::Composition(Boundary));
+    let legal = echa.get_constituents(Section::Composition(Subsection::LegalEntity));
 
-    println!("{:#?}", boundary);
+
+    println!("\tIdentification\n{:#?}", identification);
+    println!("\tLegal\n{:#?}", legal);
 
     Ok(())
 }
