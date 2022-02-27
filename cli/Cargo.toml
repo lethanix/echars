@@ -7,3 +7,5 @@ edition = "2021"
 scrapper = {path = "../scrapper"}
 anyhow = "1.0.55"
 directories = "4.0"
+serde = { version = "1", features = ["derive"] }
+csv = "1.1.6"
