@@ -1,0 +1,123 @@
+<datawarrior-fileinfo>
+<version="3.3">
+<created="1643396841280">
+<rowcount="47">
+</datawarrior-fileinfo>
+<datawarrior explanation>
+<html dir="ltr"><head></head><body contenteditable="true"><h1><font face="Segoe UI" size="6">ECHA Data Incorporation</font></h1><h2><font size="5"><font face="Segoe UI" style="font-weight: normal;">Data </font><font face="Segoe UI" style="font-weight: normal;">collection</font></font></h2><p><font face="Segoe UI">Collect data on the Substance Identity section</font></p><p><ul><li><span style="font-family: &quot;Segoe UI&quot;;">ID: <i>ID </i>in Excel&nbsp;</span><span style="font-family: &quot;Segoe UI&quot;;">sheet</span></li><li><span style="font-family: &quot;Segoe UI&quot;;">Weblink:&nbsp;</span><font face="Segoe UI"><i>exported-column-viewLink </i>in Excel sheet</font></li><li><span style="font-family: &quot;Segoe UI&quot;;">Image: Gather the image data by left click -&gt; copy image address&nbsp;</span></li><li><span style="font-family: &quot;Segoe UI&quot;;">Structure:&nbsp;</span></li><ul><li><font face="Segoe UI">Save the picture: left click -&gt; save the image</font></li><li><font face="Segoe UI">Go to OSRA:&nbsp;https://cactus.nci.nih.gov/cgi-bin/osra/index.cgi</font></li><li><font face="Segoe UI">Upload the image and "Get SMILES"</font></li><li><font face="Segoe UI">Paste smiles into DataWarrior</font></li><li><font face="Segoe UI">Clean up the structures</font></li></ul></ul><p><ul><li><font face="Segoe UI">Section: <b>Identification </b>or <b>Compositions</b></font></li><li><span style="font-family: &quot;Segoe UI&quot;;">Subsection: </span><b style="font-family: &quot;Segoe UI&quot;;">Boundary Compositions </b><span style="font-family: &quot;Segoe UI&quot;;">or&nbsp;</span><b style="font-family: &quot;Segoe UI&quot;;">Legal Entity Composition(s)</b></li><li><span style="font-family: &quot;Segoe UI&quot;;">Name: Name of the composition</span></li><li><span style="font-family: &quot;Segoe UI&quot;;">Constitute:&nbsp;</span><b style="font-family: &quot;Segoe UI&quot;;">Constitute 1</b><span style="font-family: &quot;Segoe UI&quot;;">, etc...</span></li><li><span style="font-family: &quot;Segoe UI&quot;;">Reference Name: </span><i style="font-family: &quot;Segoe UI&quot;;">Reference substance nam</i><i><font face="Segoe UI">e</font></i></li><li><span style="font-family: &quot;Segoe UI&quot;;">Reference EC: <i>EC Number</i></span></li><li><span style="font-family: &quot;Segoe UI&quot;;">Reference CAS: <i>CAS Number</i></span></li></ul></p></p></body></html>
+</datawarrior explanation>
+<column properties>
+<columnName="idcoordinates2D">
+<columnProperty="parent	Structure">
+<columnProperty="specialType	idcoordinates2D">
+<columnName="FragFp">
+<columnProperty="parent	Structure">
+<columnProperty="specialType	FragFp">
+<columnProperty="version	1.2.1">
+<columnName="Structure">
+<columnProperty="specialType	idcode">
+<columnName="Image">
+<columnProperty="lookupName0	Image">
+<columnProperty="lookupURL0	%s">
+<columnProperty="lookupCount	1">
+<columnProperty="lookupEncode0	false">
+<columnName="Name">
+<columnProperty="refColumn	Weblink">
+<columnProperty="refType	topdown">
+</column properties>
+idcoordinates2D	FragFp	EC	Weblink	Structure	Section	Image	Subsection	Name	Reference Substance	Constitute	Reference EC	Reference CAS
+												
+												
+												
+												
+												
+												
+												
+												
+												
+												
+												
+												
+												
+												
+												
+												
+												
+												
+												
+												
+												
+												
+												
+												
+												
+												
+												
+												
+												
+												
+												
+												
+												
+												
+												
+												
+												
+												
+												
+												
+												
+												
+												
+												
+												
+												
+												
+<datawarrior properties>
+<columnAliasCount="1">
+<columnAlias_0="EC	ID">
+<columnDescriptionCount="1">
+<columnDescription_0="Name	ffgad">
+<columnFilter_Table="">
+<columnOrder_Table="EC	Weblink	Image	Structure	Section	Subsection	Name	Constitute	Reference Substance	Reference EC	Reference CAS">
+<columnWidth_Table_Constitute="80">
+<columnWidth_Table_EC="80">
+<columnWidth_Table_Image="80">
+<columnWidth_Table_Name="212">
+<columnWidth_Table_Reference CAS="80">
+<columnWidth_Table_Reference EC="80">
+<columnWidth_Table_Reference Substance="191">
+<columnWidth_Table_Section="92">
+<columnWidth_Table_Structure="100">
+<columnWidth_Table_Subsection="159">
+<columnWidth_Table_Weblink="80">
+<columnWrapping_Table_Name="true">
+<columnWrapping_Table_Reference Substance="true">
+<detailView="height[Data]=0.5;height[Structure]=0.5">
+<filter0="#string#	Reference Substance">
+<filter1="#string#	Constitute">
+<filter2="#string#	Reference EC">
+<filter3="#string#	Reference CAS">
+<formLayout_Form View="TableLayout,5,6.0,-1.0,6.0,-1.0,6.0,13,4.0,-1.0,4.0,-1.0,4.0,-1.0,4.0,-1.0,4.0,-1.0,4.0,-1.0,4.0">
+<formObjectCount_Form View="7">
+<formObjectInfo_Form View_0="EC	textLine	1, 1, 1, 1, full, full">
+<formObjectInfo_Form View_1="Weblink	textLine	1, 3, 1, 3, full, full">
+<formObjectInfo_Form View_2="Structure	structure	1, 5, 1, 11, full, full">
+<formObjectInfo_Form View_3="Section	textLine	3, 1, 3, 1, full, full">
+<formObjectInfo_Form View_4="Image	textLine	3, 3, 3, 3, full, full">
+<formObjectInfo_Form View_5="Subsection	textLine	3, 5, 3, 5, full, full">
+<formObjectInfo_Form View_6="Name	textLine	3, 7, 3, 7, full, full">
+<headerLines_Table="2">
+<mainSplitting="0.76953">
+<mainView="Table">
+<mainViewCount="2">
+<mainViewDockInfo0="root">
+<mainViewDockInfo1="Form View	center">
+<mainViewInFront1="true">
+<mainViewName0="Form View">
+<mainViewName1="Table">
+<mainViewType0="formView">
+<mainViewType1="tableView">
+<rightSplitting="0.55104">
+<rowHeight_Table="80">
+</datawarrior properties>

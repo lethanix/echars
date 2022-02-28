@@ -209,7 +209,7 @@ fn data_from(document: &Html, section: Section) -> Result<EchaData> {
             weblink: "N/A".to_string(),
             structure: "N/A".to_string(),
             section: "Identification".to_string(),
-            image: wrap.get("Image link").unwrap().clone(),
+            image: wrap.get("Image link").unwrap_or(&"N/A".to_string()).clone(),
             subsection: "N/A".to_string(),
             name: wrap.get("Display Name").unwrap().clone(),
             substance: wrap.get("Display Name").unwrap().clone(),

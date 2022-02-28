@@ -55,18 +55,9 @@ fn main() -> Result<()> {
     // **************************************************
     // ****************** Save data *********************
     // **************************************************
-    // let mut rdr = csv::ReaderBuilder::new()
-    //     .delimiter(b'\t')
-    //     .comment(Some(b'<')) // Ignore datawarrior extra info
-    //     .from_path(Path::new("Templado.dwar"))?;
-    // let headers = rdr.headers()?;
-
     let mut wtr = csv::WriterBuilder::new()
         .delimiter(b'\t')
         .from_path(ofile_path)?;
-
-    // idcoordinates2D	FragFp	EC	Weblink	Structure	Section	Image	Subsection	Name	Reference Substance	Constitute	Reference EC	Reference CAS
-    // wtr.write_record(headers)?;
 
     for data in identification {
         wtr.serialize(data)?;
