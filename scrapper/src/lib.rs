@@ -3,9 +3,44 @@ use anyhow::{anyhow, Error, Result};
 use scraper::{ElementRef, Html, Selector};
 use std::collections::HashMap;
 use std::str::FromStr;
-use std::time::Instant;
+use std::fmt;
+use std::ptr::write;
+use std::time::{Duration, Instant};
+use reqwest::blocking::Client;
+use reqwest::ClientBuilder;
+use serde::{Deserialize, Serialize};
 
-type EchaData = Vec<HashMap<String, String>>;
+type EchaData = Vec<Record>;
+// type EchaData = Vec<HashMap<String, String>>;
+
+// idcoordinates2D	FragFp	EC	Weblink	Structure	Section	Image	Subsection	Name	Reference Substance	Constitute	Reference EC	Reference CAS
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct Record {
+    idcoordinates2D: String,
+    FragFp: String,
+    #[serde(alias="EC")]
+    id: String,
+    #[serde(alias="Weblink")]
+    weblink: String,
+    #[serde(skip_serializing)]
+    structure: String,
+    #[serde(alias="Section")]
+    section: String,
+    #[serde(alias="Image")]
+    image: String,
+    #[serde(alias="Subsection")]
+    subsection: String,
+    #[serde(alias="Name")]
+    name: String,
+    #[serde(alias="Reference Substance", rename(serialize="Reference Substance"))]
+    substance: String,
+    #[serde(alias="Constitute")]
+    constitute: String,
+    #[serde(alias="Reference EC", rename(serialize="Reference EC"))]
+    ec: String,
+    #[serde(alias="Reference CAS", rename(serialize="Reference CAS"))]
+    cas: String,
+}
 
 /// Represents the subsections of the Composition(s) section:
 /// - Boundary Composition(s) as `Subsection::Boundary`
@@ -43,6 +78,23 @@ impl FromStr for Subsection {
     }
 }
 
+//
+impl fmt::Display for Section {
+
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Section::Composition(Subsection::Boundary) => write!(f, "Boundary Composition(s)"),
+            Section::Composition(Subsection::LegalEntity) => write!(f, "Legal Entity Composition(s)"),
+            Section::Composition(Subsection::Generated) => write!(f, "Composition(s) generated upon use"),
+            Section::Composition(Subsection::Other) => write!(f, "Other types of composition(s)"),
+            _ => write!(f, "{:?}", self),
+        }
+        // write!(f, "{:?}", self)
+        // or, alternatively:
+        // fmt::Debug::fmt(self, f)
+    }
+}
+
 /// Represents the sections of the echa site:
 /// - Identification as `Section::Identification`
 /// - Composition(s) as `Section::Composition(Subsection)`
@@ -71,9 +123,13 @@ pub struct EchaSite<'a> {
 
 /// Fetch the html body of the provided url.
 fn fetch_document(url: &str) -> Result<Html> {
+    let client = reqwest::blocking::ClientBuilder::new()
+        .connection_verbose(true)
+        .timeout(Duration::from_secs(120))
+        .build()?;
     println!("Fetching data from {url}...");
     let now = Instant::now();
-    let body = reqwest::blocking::get(url)?.text()?;
+    let body = client.get(url).send()?.text()?;
     let elapsed = now.elapsed().as_secs();
     println!("\tFetched in: {} seconds", elapsed);
 
@@ -123,7 +179,8 @@ fn data_from(document: &Html, section: Section) -> Result<EchaData> {
             .map(|consti| {
                 (
                     String::from("Constituent"),
-                    String::from(consti.split(' ').last().unwrap()),
+                    consti.to_string(),
+                    // String::from(consti.split(' ').last().unwrap()),
                 )
             });
 
@@ -143,7 +200,23 @@ fn data_from(document: &Html, section: Section) -> Result<EchaData> {
             .next()
             .expect("Problem obtaining identification html");
 
-        Ok(vec![obtain_data(id_html).expect("Couldn't obtain Identification data")])
+        let wrap = obtain_data(id_html).expect("Couldn't obtain Identification data");
+
+        Ok(vec![Record {
+            idcoordinates2D: "N/A".to_string(),
+            FragFp: "N/A".to_string(),
+            id: "N/A".to_string(),
+            weblink: "N/A".to_string(),
+            structure: "N/A".to_string(),
+            section: "Identification".to_string(),
+            image: wrap.get("Image link").unwrap().clone(),
+            subsection: "N/A".to_string(),
+            name: wrap.get("Display Name").unwrap().clone(),
+            substance: wrap.get("Display Name").unwrap().clone(),
+            constitute: wrap.get("Constituent").unwrap_or(&"N/A".to_string()).clone(),
+            ec: wrap.get("EC Number").unwrap().clone(),
+            cas: wrap.get("CAS Number").unwrap().clone()
+        }])
         // let wrap = vec![obtain_data(id_html).expect("Couldn't obtain Identification data")];
         // Ok(vec![wrap])
     };
@@ -185,7 +258,7 @@ fn data_from(document: &Html, section: Section) -> Result<EchaData> {
         let constituent_data: EchaData = sorted_panels_data
             .filter(|(subsection, _)| *subsection == subsection_enum)
             // .inspect(|x| println!("Constituent {:?} {:?}", x.0, x.1.value().name()))
-            .map(|(_, node)| {
+            .map(|(subsection, node)| {
                 // Get the current panel title
                 let panel_title: String = node
                     .select(&title_selector)
@@ -201,7 +274,25 @@ fn data_from(document: &Html, section: Section) -> Result<EchaData> {
                         data.insert("Name".to_string(), panel_title.to_string());
                         data
                     })
-                    .collect::<Vec<HashMap<String, String>>>()
+                    .map(|wrap| {
+                        Record {
+                            idcoordinates2D: "N/A".to_string(),
+                            FragFp: "N/A".to_string(),
+                            id: "N/A".to_string(),
+                            weblink: "N/A".to_string(),
+                            structure: "N/A".to_string(),
+                            section: "Composition(s)".to_string(),
+                            image: wrap.get("Image link").unwrap_or(&"N/A".to_string()).clone(),
+                            subsection: subsection.to_string(),
+                            name: wrap.get("Name").unwrap_or(&"N/A".to_string()).clone(),
+                            substance: wrap.get("Reference substance name").unwrap_or(&"N/A".to_string()).clone(),
+                            constitute: wrap.get("Constituent").unwrap_or(&"N/A".to_string()).clone(),
+                            ec: wrap.get("EC Number").unwrap_or(&"N/A".to_string()).clone(),
+                            cas: wrap.get("CAS Number").unwrap_or(&"N/A".to_string()).clone()
+                        }
+                    })
+                    .collect::<EchaData>()
+                // .collect::<Vec<HashMap<String, String>>>()
             })
             .flatten()
             .collect();
@@ -242,5 +333,6 @@ impl<'a> EchaSite<'a> {
             }
         }
     }
+
 
 }
