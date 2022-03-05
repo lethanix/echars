@@ -1,45 +1,51 @@
-use std::borrow::Cow;
 use anyhow::{anyhow, Error, Result};
-use scraper::{ElementRef, Html, Selector};
-use std::collections::HashMap;
-use std::str::FromStr;
-use std::fmt;
-use std::ptr::write;
-use std::time::{Duration, Instant};
 use reqwest::blocking::Client;
 use reqwest::ClientBuilder;
+use scraper::{ElementRef, Html, Selector};
 use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
+use std::collections::HashMap;
+use std::fmt;
+use std::ptr::write;
+use std::str::FromStr;
+use std::time::{Duration, Instant};
 
 type EchaData = Vec<Record>;
-// type EchaData = Vec<HashMap<String, String>>;
 
 // idcoordinates2D	FragFp	EC	Weblink	Structure	Section	Image	Subsection	Name	Reference Substance	Constitute	Reference EC	Reference CAS
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Record {
     idcoordinates2D: String,
     FragFp: String,
-    #[serde(alias="EC")]
+    #[serde(alias = "EC")]
     id: String,
-    #[serde(alias="Weblink")]
+    #[serde(alias = "Weblink")]
     weblink: String,
     #[serde(skip_serializing)]
     structure: String,
-    #[serde(alias="Section")]
+    #[serde(alias = "Section")]
     section: String,
-    #[serde(alias="Image")]
+    #[serde(alias = "Image")]
     image: String,
-    #[serde(alias="Subsection")]
+    #[serde(alias = "Subsection")]
     subsection: String,
-    #[serde(alias="Name")]
+    #[serde(alias = "Name")]
     name: String,
-    #[serde(alias="Reference Substance", rename(serialize="Reference Substance"))]
-    substance: String,
-    #[serde(alias="Constitute")]
+    #[serde(
+        alias = "Reference Substance",
+        rename(serialize = "Reference Substance")
+    )]
+    pub substance: String,
+    #[serde(alias = "Constitute")]
     constitute: String,
-    #[serde(alias="Reference EC", rename(serialize="Reference EC"))]
+    #[serde(alias = "Reference EC", rename(serialize = "Reference EC"))]
     ec: String,
-    #[serde(alias="Reference CAS", rename(serialize="Reference CAS"))]
-    cas: String,
+    #[serde(alias = "Reference CAS", rename(serialize = "Reference CAS"))]
+    pub cas: String,
+    #[serde(skip)]
+    pub formula: String,
+    #[serde(skip_deserializing)]
+    pub pubchem_cas: String,
 }
 
 /// Represents the subsections of the Composition(s) section:
@@ -80,12 +86,15 @@ impl FromStr for Subsection {
 
 //
 impl fmt::Display for Section {
-
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Section::Composition(Subsection::Boundary) => write!(f, "Boundary Composition(s)"),
-            Section::Composition(Subsection::LegalEntity) => write!(f, "Legal Entity Composition(s)"),
-            Section::Composition(Subsection::Generated) => write!(f, "Composition(s) generated upon use"),
+            Section::Composition(Subsection::LegalEntity) => {
+                write!(f, "Legal Entity Composition(s)")
+            }
+            Section::Composition(Subsection::Generated) => {
+                write!(f, "Composition(s) generated upon use")
+            }
             Section::Composition(Subsection::Other) => write!(f, "Other types of composition(s)"),
             _ => write!(f, "{:?}", self),
         }
@@ -213,18 +222,24 @@ fn data_from(document: &Html, section: Section) -> Result<EchaData> {
             subsection: "N/A".to_string(),
             name: wrap.get("Display Name").unwrap().clone(),
             substance: wrap.get("Display Name").unwrap().clone(),
-            constitute: wrap.get("Constituent").unwrap_or(&"N/A".to_string()).clone(),
+            constitute: wrap
+                .get("Constituent")
+                .unwrap_or(&"N/A".to_string())
+                .clone(),
             ec: wrap.get("EC Number").unwrap().clone(),
-            cas: wrap.get("CAS Number").unwrap().clone()
+            cas: wrap.get("CAS Number").unwrap().clone(),
+            formula: wrap
+                .get("Molecular formula")
+                .unwrap_or(&"N/A".to_string())
+                .clone(),
+            pubchem_cas: "".to_string()
         }])
-        // let wrap = vec![obtain_data(id_html).expect("Couldn't obtain Identification data")];
-        // Ok(vec![wrap])
     };
 
     // **************************************************
     //*** Get subsection and panels data
-    let panels_selector =
-        Selector::parse("div.panel-group > h4 ,div.panel.panel-default").expect("panels_selector not created");
+    let panels_selector = Selector::parse("div.panel-group > h4 ,div.panel.panel-default")
+        .expect("panels_selector not created");
     let block_selector = Selector::parse("div.sBlock").expect("block_selector not created");
     let title_selector = Selector::parse("h4.panel-title").expect("title_selector not created");
 
@@ -246,8 +261,7 @@ fn data_from(document: &Html, section: Section) -> Result<EchaData> {
                         .collect::<String>()
                         .replace("open allclose all", "");
 
-                    *state =
-                        Section::Composition(Subsection::from_str(subsection.as_str()).ok()?);
+                    *state = Section::Composition(Subsection::from_str(subsection.as_str()).ok()?);
                 }
 
                 Some((*state, node))
@@ -274,22 +288,31 @@ fn data_from(document: &Html, section: Section) -> Result<EchaData> {
                         data.insert("Name".to_string(), panel_title.to_string());
                         data
                     })
-                    .map(|wrap| {
-                        Record {
-                            idcoordinates2D: "N/A".to_string(),
-                            FragFp: "N/A".to_string(),
-                            id: "N/A".to_string(),
-                            weblink: "N/A".to_string(),
-                            structure: "N/A".to_string(),
-                            section: "Composition(s)".to_string(),
-                            image: wrap.get("Image link").unwrap_or(&"N/A".to_string()).clone(),
-                            subsection: subsection.to_string(),
-                            name: wrap.get("Name").unwrap_or(&"N/A".to_string()).clone(),
-                            substance: wrap.get("Reference substance name").unwrap_or(&"N/A".to_string()).clone(),
-                            constitute: wrap.get("Constituent").unwrap_or(&"N/A".to_string()).clone(),
-                            ec: wrap.get("EC Number").unwrap_or(&"N/A".to_string()).clone(),
-                            cas: wrap.get("CAS Number").unwrap_or(&"N/A".to_string()).clone()
-                        }
+                    .map(|wrap| Record {
+                        idcoordinates2D: "N/A".to_string(),
+                        FragFp: "N/A".to_string(),
+                        id: "N/A".to_string(),
+                        weblink: "N/A".to_string(),
+                        structure: "N/A".to_string(),
+                        section: "Composition(s)".to_string(),
+                        image: wrap.get("Image link").unwrap_or(&"N/A".to_string()).clone(),
+                        subsection: subsection.to_string(),
+                        name: wrap.get("Name").unwrap_or(&"N/A".to_string()).clone(),
+                        substance: wrap
+                            .get("Reference substance name")
+                            .unwrap_or(&"N/A".to_string())
+                            .clone(),
+                        constitute: wrap
+                            .get("Constituent")
+                            .unwrap_or(&"N/A".to_string())
+                            .clone(),
+                        ec: wrap.get("EC Number").unwrap_or(&"N/A".to_string()).clone(),
+                        cas: wrap.get("CAS Number").unwrap_or(&"N/A".to_string()).clone(),
+                        formula: wrap
+                            .get("Molecular formula")
+                            .unwrap_or(&"N/A".to_string())
+                            .clone(),
+                        pubchem_cas: "".to_string()
                     })
                     .collect::<EchaData>()
                 // .collect::<Vec<HashMap<String, String>>>()
@@ -333,6 +356,4 @@ impl<'a> EchaSite<'a> {
             }
         }
     }
-
-
 }

@@ -1,17 +1,18 @@
-use anyhow::{Context, Result};
-use directories::{UserDirs, ProjectDirs};
-use scrapper::{EchaSite, Section, Subsection};
-use std::fs;
-use std::borrow::{Borrow, Cow};
-use std::path::{Path, PathBuf};
+use anyhow::{anyhow, Context, Result};
+use directories::{ProjectDirs, UserDirs};
+use oxychem::{get_cas, get_cid, search_formula};
 use scrapper::Subsection::{Boundary, Other};
+use scrapper::{EchaSite, Section, Subsection};
 use serde::{Deserialize, Serialize};
+use std::borrow::{Borrow, Cow};
+use std::fs;
+use std::path::{Path, PathBuf};
 
 fn main() -> Result<()> {
     // **************************************************
     // ************ CLI args requirements ***************
     // **************************************************
-    let url : Cow<'static, str> = match std::env::args().nth(1) {
+    let url: Cow<'static, str> = match std::env::args().nth(1) {
         Some(url) => Cow::from(url),
         None => {
             println!("No CLI URL provided, using default.");
@@ -60,6 +61,38 @@ fn main() -> Result<()> {
         .from_path(ofile_path)?;
 
     for data in identification {
+        // ! TODO: Compare cas with pubchem data and retrieve sdf file.
+        // let formula = data.formula.clone();
+        // let list = match search_formula(&formula) {
+        //     Ok(it) => it,
+        //     Err(_err) => {//
+        //         return Err(anyhow!(//
+        //             "Couldn't obtain list of cids fr// om molecular formula -> {_err}"
+        //         ))//
+        //     }//
+        // };//
+
+        // //let cid = get_cid(data.substance.clone()).// unwrap_or(0);
+        // let cas_list: Vec<String> = list//
+        //     .iter()//
+        //     .map(|cid| cid.parse::<isize>().expect("// Couldn't parse cid to isize"))
+        //     .map(|cid| get_cas(cid).unwrap_or("N/A".// to_string()))
+        //     .collect();//
+
+        // let w = cas_list.iter()//
+        //     .enumerate()//
+        //     .scan(0, |state, (idx, value)| {//
+        //         if value == &data.cas {//
+        //             *state = idx;//
+        //         }//
+        //         Some(*state)//
+        //     });//
+
+        // dbg!(w);//
+
+        // //let cas = get_cas(cid).unwrap_or("N/A".to_// string());
+        // eprintln!("list = {:#?}", list);
+        // eprintln!("CAS\n\tPubchem: {:?}\n\tEcha: {:?}", cas_list, &data.cas);
         wtr.serialize(data)?;
     }
 
