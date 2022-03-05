@@ -220,14 +220,14 @@ fn data_from(document: &Html, section: Section) -> Result<EchaData> {
             section: "Identification".to_string(),
             image: wrap.get("Image link").unwrap_or(&"N/A".to_string()).clone(),
             subsection: "N/A".to_string(),
-            name: wrap.get("Display Name").unwrap().clone(),
-            substance: wrap.get("Display Name").unwrap().clone(),
+            name: wrap.get("Display Name").unwrap_or(&"N/A".to_string()).clone(),
+            substance: wrap.get("Display Name").unwrap_or(&"N/A".to_string()).clone(),
             constitute: wrap
                 .get("Constituent")
                 .unwrap_or(&"N/A".to_string())
                 .clone(),
-            ec: wrap.get("EC Number").unwrap().clone(),
-            cas: wrap.get("CAS Number").unwrap().clone(),
+            ec: wrap.get("EC Number").unwrap_or(&"N/A".to_string()).clone(),
+            cas: wrap.get("CAS Number").unwrap_or(&"N/A".to_string()).clone(),
             formula: wrap
                 .get("Molecular formula")
                 .unwrap_or(&"N/A".to_string())
