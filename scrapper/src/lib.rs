@@ -20,7 +20,7 @@ pub struct Record {
     #[serde(alias = "EC")]
     id: String,
     #[serde(alias = "Weblink")]
-    weblink: String,
+    pub weblink: String,
     #[serde(skip_serializing)]
     structure: String,
     #[serde(alias = "Section")]

@@ -60,7 +60,7 @@ fn main() -> Result<()> {
         .delimiter(b'\t')
         .from_path(ofile_path)?;
 
-    for data in identification {
+    for mut data in identification {
         // ! TODO: Compare cas with pubchem data and retrieve sdf file.
         // let formula = data.formula.clone();
         // let list = match search_formula(&formula) {
@@ -93,22 +93,27 @@ fn main() -> Result<()> {
         // //let cas = get_cas(cid).unwrap_or("N/A".to_// string());
         // eprintln!("list = {:#?}", list);
         // eprintln!("CAS\n\tPubchem: {:?}\n\tEcha: {:?}", cas_list, &data.cas);
+        data.weblink = url.to_string();
         wtr.serialize(data)?;
     }
 
-    for data in boundary {
+    for mut data in boundary {
+        data.weblink = url.to_string();
         wtr.serialize(data)?;
     }
 
-    for data in legal {
+    for mut data in legal {
+        data.weblink = url.to_string();
         wtr.serialize(data)?;
     }
 
-    for data in generated {
+    for mut data in generated {
+        data.weblink = url.to_string();
         wtr.serialize(data)?;
     }
 
-    for data in other {
+    for mut data in other {
+        data.weblink = url.to_string();
         wtr.serialize(data)?;
     }
 
